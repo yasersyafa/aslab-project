@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* opsi 1 */
+body {
+  background-image: radial-gradient(#444 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* opsi 2 */
+/* body {
+  background-color: #e0e0e0;
+  background-image: 
+    linear-gradient(45deg, #FFFF56FF 25%, transparent 25%),
+    linear-gradient(-45deg, #FFFF56FF 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #FFFF56FF 75%),
+    linear-gradient(-45deg, transparent 75%, #FFFF56FF 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+} */
+
+
+.font-pixel {
+  font-family: "Press Start 2P", system-ui;
+}
+
+.shadow-pixel {
+  box-shadow: 4px 4px 0px #FFD700;
+}
+
+.text-shadow-pixel {
+  text-shadow: 2px 2px 0 #000000FF;
+}

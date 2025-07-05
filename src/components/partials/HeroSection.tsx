@@ -17,7 +17,7 @@ export default function HeroSection() {
                     <br />
                     Laboratory Assistant.
                 </h1>
-                <p className="font-base text-lg sm:text-xl max-w-3xl sm:max-w-4xl text-center">We are the Assistant Team — students who contribute to learning, collaboration, and creative projects in the Game Tech Studio Lab.</p>
+                <p className="font-base sm:text-lg md:text-xl max-w-3xl sm:max-w-4xl text-center">A dedicated group of students who strive to learning, collaboration, and creativity — where code meets art, game design comes to life, and the magic of innovation is brewed daily.</p>
             </div>
             <Button size={'cta'} className="text-xl font-bold cursor-pointer">
                 Get To Know Us

@@ -1,32 +1,74 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* opsi 1 */
-body {
-  background-image: radial-gradient(#444 1px, transparent 1px);
-  background-size: 6px 6px;
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(95.16% 0.0242 343.23);
+  --secondary-background: oklch(100% 0 0);
+  --foreground: oklch(0% 0 0);
+  --main-foreground: oklch(0% 0 0);
+  --main: oklch(71.5% 0.197 354.23);
+  --border: oklch(0% 0 0);
+  --ring: oklch(0% 0 0);
+  --overlay: oklch(0% 0 0 / 0.8);
+  --shadow: 2px 4px 0px 0px var(--border);
+  --chart-1: #FC64AB;
+  --chart-2: #FACC00;
+  --chart-3: #FF7A05;
+  --chart-4: #FF4D50;
+  --chart-5: #7A83FF;
+  --chart-active-dot: #000;
 }
 
-/* opsi 2 */
-/* body {
-  background-color: #e0e0e0;
-  background-image: 
-    linear-gradient(45deg, #FFFF56FF 25%, transparent 25%),
-    linear-gradient(-45deg, #FFFF56FF 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #FFFF56FF 75%),
-    linear-gradient(-45deg, transparent 75%, #FFFF56FF 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-} */
-
-
-.font-pixel {
-  font-family: "Press Start 2P", system-ui;
+.dark {
+  --background: oklch(26.3% 0.054 358.23);
+  --secondary-background: oklch(23.93% 0 0);
+  --foreground: oklch(92.49% 0 0);
+  --main-foreground: oklch(0% 0 0);
+  --main: oklch(65.98% 0.2407 358.64);
+  --border: oklch(0% 0 0);
+  --ring: oklch(100% 0 0);
+  --shadow: 2px 4px 0px 0px var(--border);
+  --chart-1: #FB3290;
+  --chart-2: #E0B700;
+  --chart-3: #EB6D00;
+  --chart-4: #FF6669;
+  --chart-5: #7A83FF;
+  --chart-active-dot: #fff;
 }
 
-.shadow-pixel {
-  box-shadow: 4px 4px 0px #FFD700;
-}
+@theme inline {
+  --color-main: var(--main);
+  --color-background: var(--background);
+  --color-secondary-background: var(--secondary-background);
+  --color-foreground: var(--foreground);
+  --color-main-foreground: var(--main-foreground);
+  --color-border: var(--border);
+  --color-overlay: var(--overlay);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
-.text-shadow-pixel {
-  text-shadow: 2px 2px 0 #000000FF;
+  --spacing-boxShadowX: 2px;
+  --spacing-boxShadowY: 4px;
+  --spacing-reverseBoxShadowX: -2px;
+  --spacing-reverseBoxShadowY: -4px;
+  --radius-base: 5px;
+  --shadow-shadow: var(--shadow);
+  --font-weight-base: 500;
+  --font-weight-heading: 700;
+}
+  
+@layer base {
+  body {
+    @apply text-foreground font-base bg-background;
+  }
+
+  h1, h2, h3, h4, h5, h6{
+    @apply font-heading;
+  }
 }

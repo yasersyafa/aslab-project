@@ -1,13 +1,15 @@
-import TelegramForm from './components/TelegramForm'
-import Toast from './plugins/Toast'
+import HeroSection from './components/partials/HeroSection'
+import Navbar from './components/partials/Navbar'
+import { Toaster } from 'sonner'
+import pattern from '@/assets/pattern.png'
 
 function App() {
 
   return (
-    <div className='w-full h-screen flex flex-col items-center justify-center font-pixel p-2'>
-      <h1 className='text-4xl font-bold text-yellow-500 text-center text-shadow-pixel mb-5'>Becky Message!</h1>
-      <TelegramForm />
-      <Toast />
+    <div style={{ backgroundImage: `url(${pattern})`, backgroundRepeat: 'repeat' }}>
+      <Navbar />
+      <HeroSection />
+      <Toaster />
     </div>
   )
 }

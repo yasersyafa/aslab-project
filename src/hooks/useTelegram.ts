@@ -7,6 +7,9 @@ export function useTelegram() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // debugging
+  
+
   const sendMessage = async (message: string) => {
     setLoading(true);
     setError(null);
@@ -51,6 +54,7 @@ export function useTelegram() {
       formData.append("chat_id", TELEGRAM_CHAT_ID);
       formData.append("photo", file);
       if (caption) formData.append("caption", caption);
+      formData.append("parse_mode", "HTML")
 
       const res = await fetch(
         `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,

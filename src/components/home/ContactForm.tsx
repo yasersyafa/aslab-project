@@ -35,16 +35,14 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
 
   const { sendMessage, sendPhoto, loading } = useTelegram();
 
-//   const { sendMessage, sendPhoto } = useTelegram()
+  const onSubmitDummy = () => {
+    onSuccess()
+    toast.success('Hello World From Becky')
+  }
 
   const onSubmit = async (values: FormSchemaType) => {
     const whatsappLink = `https://wa.me/${values.phone.replace("+", "")}`
     const caption = `🚨 ALERT!\n\n👤 Nama: ${values.name}\n🏫 Kelas: GT ${values.studentClass} ${values.studentYear}\n📞 No. Telp: <a href="${whatsappLink}">${values.phone}</a>\n💬 Pesan: ${values.message}`
-
-    // const escapeMarkdown = (text: string) =>
-    //   text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&"); // Escape karakter spesial MarkdownV2
-
-    // const caption = `🚨 ALERT!\n\n👤 Nama: ${escapeMarkdown(values.name)}\n🏫 Kelas: GT ${escapeMarkdown(values.studentClass)} ${escapeMarkdown(values.studentYear)}\n📞 No. Telp: ${escapeMarkdown(values.phone)}\n💬 Pesan: ${escapeMarkdown(values.message)}`
 
     if(values.photo?.[0]) {
           await sendPhoto(values.photo[0], caption)
@@ -70,7 +68,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mx-auto w-full">
+      <form onSubmit={form.handleSubmit(onSubmitDummy)} className="space-y-6 mx-auto w-full">
         {/* Student Name */}
         <FormField
           control={form.control}

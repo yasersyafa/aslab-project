@@ -1,6 +1,6 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { toast } from "sonner"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -8,17 +8,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "../ui/form"
+} from "../ui/form";
 
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { formSchema, type FormSchemaType } from "@/schema/formSchema"
-import { useTelegram } from '@/hooks/useTelegram'
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { formSchema, type FormSchemaType } from "@/schema/formSchema";
+import { useTelegram } from "@/hooks/useTelegram";
 
 interface ContactFormProps {
-    onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export default function ContactForm({ onSuccess }: ContactFormProps) {
@@ -31,44 +37,42 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       phone: "",
       message: "",
     },
-  })
+  });
 
   const { sendMessage, sendPhoto, loading } = useTelegram();
 
-  const onSubmitDummy = () => {
-    onSuccess()
-    toast.success('Hello World From Becky')
-  }
-
   const onSubmit = async (values: FormSchemaType) => {
-    const whatsappLink = `https://wa.me/${values.phone.replace("+", "")}`
-    const caption = `🚨 ALERT!\n\n👤 Nama: ${values.name}\n🏫 Kelas: GT ${values.studentClass} ${values.studentYear}\n📞 No. Telp: <a href="${whatsappLink}">${values.phone}</a>\n💬 Pesan: ${values.message}`
+    const whatsappLink = `https://wa.me/${values.phone.replace("+", "")}`;
+    const caption = `🚨 ALERT!\n\n👤 Nama: ${values.name}\n🏫 Kelas: GT ${values.studentClass} ${values.studentYear}\n📞 No. Telp: <a href="${whatsappLink}">${values.phone}</a>\n💬 Pesan: ${values.message}`;
 
-    if(values.photo?.[0]) {
-          await sendPhoto(values.photo[0], caption)
-          .then(() => {
-            toast.success("Sned message successful")
-            onSuccess()
-          })
-          .catch(() => {
-            toast.error("Send message failed")
-          })
-        } else {
-          await sendMessage(caption)
-          .then(() => {
-            toast.success("Send message successful")
-            onSuccess()
-          })
-          .catch(() => {
-            toast.error("Send message failed")
-          })
-        }
-    onSuccess()
-  }
+    if (values.photo?.[0]) {
+      await sendPhoto(values.photo[0], caption)
+        .then(() => {
+          toast.success("Sned message successful");
+          onSuccess();
+        })
+        .catch(() => {
+          toast.error("Send message failed");
+        });
+    } else {
+      await sendMessage(caption)
+        .then(() => {
+          toast.success("Send message successful");
+          onSuccess();
+        })
+        .catch(() => {
+          toast.error("Send message failed");
+        });
+    }
+    onSuccess();
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmitDummy)} className="space-y-6 mx-auto w-full">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6 mx-auto w-full"
+      >
         {/* Student Name */}
         <FormField
           control={form.control}
@@ -185,9 +189,9 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
 
         {/* Submit */}
         <Button type="submit" className="w-full" disabled={loading}>
-          { loading ? 'Loading...' : 'Send Message' }
+          {loading ? "Loading..." : "Send Message"}
         </Button>
       </form>
     </Form>
-  )
+  );
 }

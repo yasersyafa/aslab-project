@@ -6,16 +6,14 @@ export const formSchema = z.object({
   studentClass: z.enum(["A", "B", "C", "D"], {
     required_error: "Class is required",
   }),
-  studentYear: z.enum(["2022", "2023", "2024"], {
+  studentYear: z.enum(["2022", "2023", "2024", "2025"], {
     required_error: "Year is required",
   }),
-  phone: z
-    .string()
-    .regex(/^\+62[0-9]{9,14}$/, {
-      message: "Phone must start with +62 and contain only numbers",
-    }),
+  phone: z.string().regex(/^\+62[0-9]{9,14}$/, {
+    message: "Phone must start with +62 and contain only numbers",
+  }),
   message: z.string().min(1, "Message is required"),
   photo: z.any().optional(), // Optional file
-})
+});
 
 export type FormSchemaType = z.infer<typeof formSchema>;

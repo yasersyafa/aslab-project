@@ -1,5 +1,4 @@
-
-import ContactForm from "./ContactForm"
+import BorrowingForm from "./BorrowingForm"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { useState } from "react"
@@ -19,14 +18,16 @@ export default function Navbar() {
                     <li>
                         <Dialog open={open} onOpenChange={setOpen}>
                             <DialogTrigger asChild>
-                                <Button>Contact Us</Button>
+                                <Button>Pinjam Lab / Alat</Button>
                             </DialogTrigger>
-                            <DialogContent className="max-sm:max-h-[60vh] overflow-y-auto">
+                            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                                 <DialogHeader>
-                                    <DialogTitle>Contact Form</DialogTitle>
-                                    <DialogDescription>Please fill these fields below</DialogDescription>
+                                    <DialogTitle>Form Peminjaman</DialogTitle>
+                                    <DialogDescription>
+                                        Isi data di bawah — aslab akan segera memproses permohonanmu.
+                                    </DialogDescription>
                                 </DialogHeader>
-                                <ContactForm onSuccess={() => setOpen(false)} />
+                                <BorrowingForm onSuccess={() => setOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </li>

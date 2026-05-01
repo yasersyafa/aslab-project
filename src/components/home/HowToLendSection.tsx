@@ -1,3 +1,7 @@
+import { useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import Duck from "./Duck";
+
 type Step = {
   number: number;
   text: string;
@@ -23,6 +27,13 @@ const ITEM_STEPS: Step[] = [
   { number: 6, text: "Use /ambil — photo item condition when picking up 📸" },
   { number: 7, text: "Return it with /pengembalian" },
   { number: 8, text: "Photo item condition when returning 📸" },
+];
+
+type TabKey = "lab" | "items";
+
+const TABS: { key: TabKey; emoji: string; label: string; steps: Step[] }[] = [
+  { key: "lab", emoji: "🏫", label: "Borrow a Lab", steps: LAB_STEPS },
+  { key: "items", emoji: "📦", label: "Borrow Items", steps: ITEM_STEPS },
 ];
 
 function Timeline({ steps, color }: { steps: Step[]; color: string }) {
@@ -55,41 +66,71 @@ function Timeline({ steps, color }: { steps: Step[]; color: string }) {
 }
 
 export default function HowToLendSection() {
+  const [tab, setTab] = useState<TabKey>("lab");
+  const active = TABS.find((t) => t.key === tab)!;
+  const panelWrapRef = useRef<HTMLDivElement>(null);
+
   return (
     <section id="how-to-borrow" className="py-24 px-5">
       <div className="container mx-auto">
         {/* heading */}
-        <div className="mb-14 text-center">
+        <div className="mb-10 text-center">
           <h2 className="font-extrabold text-4xl sm:text-5xl mb-4">
             How to Borrow
           </h2>
           <p className="text-lg max-w-xl mx-auto font-base opacity-70">
-            Two flows — pick whichever applies. Both start with a chat to Becky
-            on Telegram.
+            Pick the flow you need — both start with a chat to Becky on
+            Telegram.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Lab card */}
-          <div className="bg-secondary-background border-2 border-black rounded-base shadow-shadow p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <span className="text-3xl">🏫</span>
-              <h3 className="font-extrabold text-2xl">Borrow a Lab</h3>
-            </div>
-            <Timeline
-              steps={LAB_STEPS}
-              color="bg-main text-main-foreground"
-            />
-          </div>
+        {/* tab bar */}
+        <div
+          role="tablist"
+          aria-label="How to borrow flows"
+          className="flex justify-center gap-4 mb-8 flex-wrap"
+        >
+          {TABS.map((t) => {
+            const isActive = t.key === tab;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`panel-${t.key}`}
+                id={`tab-${t.key}`}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "px-6 py-3 rounded-base border-2 border-border font-heading text-base cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black",
+                  isActive
+                    ? "bg-main text-main-foreground shadow-shadow"
+                    : "bg-background text-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none"
+                )}
+              >
+                <span className="mr-2">{t.emoji}</span>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Item card */}
-          <div className="bg-secondary-background border-2 border-black rounded-base shadow-shadow p-8">
+        {/* tab panel + walking duck */}
+        <div ref={panelWrapRef} className="relative max-w-2xl mx-auto">
+          <Duck containerRef={panelWrapRef} />
+          <div
+            key={tab}
+            role="tabpanel"
+            id={`panel-${active.key}`}
+            aria-labelledby={`tab-${active.key}`}
+            className="bg-secondary-background border-2 border-black rounded-base shadow-shadow p-8 animate-in fade-in duration-200"
+          >
             <div className="flex items-center gap-3 mb-8">
-              <span className="text-3xl">📦</span>
-              <h3 className="font-extrabold text-2xl">Borrow Items</h3>
+              <span className="text-3xl">{active.emoji}</span>
+              <h3 className="font-extrabold text-2xl">{active.label}</h3>
             </div>
             <Timeline
-              steps={ITEM_STEPS}
+              steps={active.steps}
               color="bg-main text-main-foreground"
             />
           </div>

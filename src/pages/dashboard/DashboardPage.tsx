@@ -24,8 +24,8 @@ export default function DashboardPage() {
                 {/* profile */}
                 <div className='col-span-2'>
                     <ProfileCard />
-               </div>
-               <Card className='w-full bg-white max-lg:col-span-2'>
+                </div>
+                <Card className='w-full bg-white max-lg:col-span-2'>
                     <CardHeader>
                         <CardTitle>LATEST ANNOUNCEMENT</CardTitle>
                         <CardDescription>Extra attention</CardDescription>
@@ -37,10 +37,10 @@ export default function DashboardPage() {
                         <br />Tempat: Lab Game Design
                     </CardContent>
                     <CardFooter><span className='font-bold'> Yaser Syafa</span></CardFooter>
-               </Card>
+                </Card>
 
-               {/* assignments and tasks */}
-               <Card className='col-span-2 lg:col-span-3 bg-white'>
+                {/* assignments and tasks */}
+                <Card className='col-span-2 lg:col-span-3 bg-white'>
                     <CardHeader>
                         <CardTitle>ASSIGNMENTS & TASKS</CardTitle>
                         <CardDescription>Here Is Our Job</CardDescription>
@@ -48,7 +48,7 @@ export default function DashboardPage() {
                     <CardContent>
 
                     </CardContent>
-               </Card>
+                </Card>
             </div>
         </div>
     )

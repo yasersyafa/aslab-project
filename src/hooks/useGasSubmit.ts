@@ -6,29 +6,28 @@ const GAS_URL = import.meta.env.VITE_GAS_URL as string;
 export type SubmitStatus = "idle" | "loading" | "success" | "error";
 
 export function useGasSubmit() {
-  const [status, setStatus]     = useState<SubmitStatus>("idle");
+  const [status,    setStatus]    = useState<SubmitStatus>("idle");
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg]  = useState<string | null>(null);
+  const [errorMsg,  setErrorMsg]  = useState<string | null>(null);
 
-  const submitBorrowing = async (values: FormSchemaType, telegramId: string) => {
+  const submitBorrowing = async (values: FormSchemaType) => {
     setStatus("loading");
     setErrorMsg(null);
-
     try {
       const localBookingId = generateBookingId();
       const payload = {
-        bookingId:    localBookingId,
-        name:         values.name,
-        studentClass: values.studentClass,
-        studentYear:  values.studentYear,
-        telegramId:   telegramId,
+        bookingId:     localBookingId,
+        name:          values.name,
+        studentClass:  values.studentClass,
+        studentYear:   values.studentYear,
+        phone:         values.phone,
         borrowingType: values.borrowingType,
         item:
           values.borrowingType === "Lab"
             ? values.labRoom
             : values.toolName === "Lainnya"
-            ? values.toolOtherName
-            : values.toolName,
+              ? values.toolOtherName
+              : values.toolName,
         borrowDate: values.borrowDate,
         borrowTime: values.borrowTime,
         returnTime: values.returnTime,
@@ -59,7 +58,6 @@ export function useGasSubmit() {
     setBookingId(null);
     setErrorMsg(null);
   };
-
   return { submitBorrowing, status, bookingId, errorMsg, reset };
 }
 

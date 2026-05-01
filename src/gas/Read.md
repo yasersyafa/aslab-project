@@ -1,118 +1,140 @@
-# Google Apps Script — Setup Guide
+# Google Apps Script - Setup Telegram Full Flow
 
-## Langkah 1: Buat Google Spreadsheet
+Script ini sekarang dirancang untuk flow peminjaman penuh lewat Telegram bot:
 
-Buat spreadsheet baru di Google Sheets, lalu catat **Spreadsheet ID** dari URL-nya:
+1. User daftar nomor HP di bot.
+2. User isi form peminjaman langsung di chat bot lewat tombol dan input teks.
+3. Bot simpan data ke Google Sheet.
+4. Grup aslab menerima notifikasi dengan tombol `Approve` / `Decline`.
+5. Hasil approve atau decline dikirim kembali ke chat ID peminjam.
 
+## 1. Siapkan Google Spreadsheet
+
+Buat spreadsheet baru lalu catat `Spreadsheet ID` dari URL:
+
+```text
+https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
 ```
-https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_ADA_DI_SINI/edit
-```
 
-Buat 3 sheet dengan nama persis seperti ini:
-| Nama Sheet | Keterangan |
-|----------------|---------------------------------------|
-| `Peminjaman` | Data peminjaman masuk (auto dibuat) |
-| `Jadwal Aslab` | Jadwal piket aslab per hari |
-| `Users` | Mapping nomor HP → Telegram Chat ID |
+Gunakan sheet berikut:
 
-### Format Sheet "Jadwal Aslab"
+| Nama Sheet | Fungsi |
+| --- | --- |
+| `Peminjaman` | Menyimpan data booking |
+| `Jadwal Aslab` | Menyimpan aslab PJ per tanggal |
+| `Users` | Mapping nomor HP, chat ID, state, draft form |
+| `Debug Log` | Otomatis dibuat bila diperlukan |
 
-| Tanggal (dd/MM/yyyy) | Nama Aslab | No HP (+62...) |
-| -------------------- | ---------- | -------------- |
-| 08/04/2026           | Budi S.    | +6281234567890 |
+Format `Jadwal Aslab`:
 
-### Format Sheet "Users"
+| Tanggal | Nama Aslab | No HP |
+| --- | --- | --- |
+| `29/04/2026` | `Budi S.` | `+6281234567890` |
 
-| No HP (+62...) | Telegram Chat ID |
-| -------------- | ---------------- |
-| +6281234567890 | 123456789        |
+## 2. Pasang Script di Google Apps Script
 
-> **Cara dapat Telegram Chat ID peminjam:** Minta peminjam kirim pesan ke bot kamu dulu (/start), lalu jalankan `getUpdates` di browser:
-> `https://api.telegram.org/botTOKEN_KAMU/getUpdates`
-
----
-
-## Langkah 2: Buat Apps Script Project
-
-1. Buka [script.google.com](https://script.google.com)
-2. Klik **New Project**
-3. Copy-paste seluruh isi `Code.gs` ke editor
-4. **PENTING:** Update bagian `CONFIG` di baris paling atas:
+1. Buka `script.google.com`
+2. Buat project baru
+3. Copy isi file [Code.gs](/D:/programming/aslab-project/src/gas/Code.gs) ke editor
+4. Update object `CONFIG`:
 
 ```javascript
 var CONFIG = {
   SPREADSHEET_ID: "ID_SPREADSHEET_KAMU",
   SHEET_PEMINJAMAN: "Peminjaman",
   SHEET_ASLAB: "Jadwal Aslab",
+  SHEET_USERS: "Users",
   TELEGRAM_BOT_TOKEN: "TOKEN_BOT_KAMU",
-  TELEGRAM_CS_CHAT_ID: "-ID_GROUP_CS_KAMU", // pakai minus kalau group
+  TELEGRAM_CS_CHAT_ID: "-ID_GROUP_ASLAB",
+  EXEC_URL: "URL_WEB_APP_KAMU",
+  TIMEZONE: "Asia/Jakarta",
 };
 ```
 
-5. Juga **ganti fungsi `doPost`** dengan versi yang ada di comment bawah file (yang handle dua source: React + Telegram webhook)
+## 3. Deploy sebagai Web App
 
----
+1. Klik `Deploy -> New deployment`
+2. Pilih `Web app`
+3. Set:
+   - `Execute as: Me`
+   - `Who has access: Anyone`
+4. Klik `Deploy`
+5. Copy URL hasil deploy
+6. Tempel URL itu ke `CONFIG.EXEC_URL`
+7. Deploy ulang bila `EXEC_URL` berubah
 
-## Langkah 3: Deploy sebagai Web App
+## 4. Aktifkan Webhook Telegram
 
-1. Klik **Deploy** → **New Deployment**
-2. Pilih type: **Web app**
-3. Settings:
-   - Execute as: **Me**
-   - Who has access: **Anyone** (penting! agar frontend bisa POST)
-4. Klik **Deploy**
-5. Copy **Web App URL** → simpan untuk langkah berikutnya
+Di editor Apps Script, jalankan fungsi:
 
----
-
-## Langkah 4: Setup di Frontend (.env)
-
-Buka `.env` di project React, tambahkan:
-
-```
-VITE_GAS_URL=https://script.google.com/macros/s/XXXX/exec
+```javascript
+setupWebhook()
 ```
 
-> **Keamanan:** Bot token sekarang tersimpan di Apps Script (server-side), bukan di frontend. Aman! ✅
+Kalau ingin reset webhook dan buang pending update:
 
----
+```javascript
+resetWebhookHard()
+```
 
-## Langkah 5: Setup Telegram Webhook
+Cek status webhook:
 
-Di Apps Script editor, jalankan fungsi `setupWebhook` **sekali saja**:
+```javascript
+checkWebhook()
+```
 
-1. Pilih fungsi `setupWebhook` dari dropdown
-2. Klik **Run**
-3. Cek **Execution Log** — harus ada `"ok": true`
+## 5. Flow User di Bot
 
-Ini mendaftarkan GAS URL kamu sebagai penerima callback tombol Approve/Decline dari Telegram.
+Perintah utama:
 
----
+- `/start` untuk registrasi nomor dan buka menu
+- `/pinjam` untuk mulai form peminjaman
+- `/status` untuk lihat daftar booking
+- `/status BOOKxxxx` untuk lihat detail booking tertentu
+- `/batalkan` untuk lihat daftar booking `WAITING`
+- `/batalkan BOOKxxxx` untuk membatalkan booking tertentu
+- `/batal` untuk menghentikan form yang sedang berjalan
 
-## Langkah 6: Test Flow
+Flow input user:
 
-1. Buka website → klik **Pinjam Lab / Alat**
-2. Isi form → Submit
-3. Cek grup Telegram CS → harus muncul notifikasi dengan tombol Approve/Decline
-4. Klik **Approve**
-5. Cek Spreadsheet → status berubah jadi `APPROVED`
-6. Peminjam dapat pesan Telegram (jika sudah register via bot)
+1. User kirim `/start`
+2. User kirim nomor HP atau share contact
+3. User pilih `Ajukan Peminjaman`
+4. User isi nama, pilih kelas, angkatan, jenis peminjaman, item, tanggal, jam, dan keperluan
+5. User klik `Kirim Permohonan`
 
----
+## 6. Flow Approval Aslab
 
-## Troubleshooting
+Saat booking masuk:
 
-**Form submit tapi tidak ada notif Telegram:**
+1. Grup aslab menerima detail booking
+2. Ada tombol `Approve` dan `Decline`
+3. Saat salah satu tombol ditekan:
+   - status sheet diperbarui
+   - info PJ disimpan jika approved
+   - hasil dikirim ke chat ID peminjam
 
-- Cek Execution Log di Apps Script (View → Execution Log)
-- Pastikan `TELEGRAM_CS_CHAT_ID` benar (group pakai prefix `-`)
+## 7. Catatan Penting
 
-**Tombol Approve/Decline tidak respon:**
+- Script ini tidak lagi bergantung pada React untuk submit peminjaman.
+- `doPost` masih menyisakan fallback payload lama supaya migrasi tidak langsung memutus flow lama bila masih ada client yang belum dilepas.
+- Kolom `Catatan` pada sheet `Peminjaman` dipakai untuk menyimpan metadata seperti `CHAT_ID` dan `SOURCE`.
+- Jika token bot pernah terlanjur tersimpan di repo publik, sebaiknya lakukan rotate token di BotFather.
 
-- Jalankan `setupWebhook` lagi
-- Pastikan GAS deployment sudah di-redeploy setelah edit kode
+## 8. Debug
 
-**Peminjam tidak dapat notif:**
+Fungsi bantu:
 
-- Pastikan peminjam sudah pernah /start ke bot
-- Cek sheet `Users` apakah chat_id sudah terisi
+```javascript
+debugBotIdentity()
+debugUsers()
+debugApproveManual()
+resetUpdateId()
+```
+
+Kalau ada masalah:
+
+- cek `Executions` di Apps Script
+- cek sheet `Debug Log`
+- pastikan bot sudah ada di grup aslab
+- pastikan bot punya izin membaca callback button di grup

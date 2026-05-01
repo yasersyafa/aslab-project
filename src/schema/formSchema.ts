@@ -14,6 +14,8 @@ export const formSchema = z.object({
   name:         z.string().min(2, "Nama minimal 2 karakter"),
   studentClass: z.enum(["A", "B", "C", "D"], { required_error: "Kelas wajib dipilih" }),
   studentYear:  z.enum(["2022", "2023", "2024", "2025"], { required_error: "Angkatan wajib dipilih" }),
+  phone: z.string()
+    .regex(/^(\+62|62|08)[0-9]{8,13}$/, "Format: 08xx atau +62xx"),
   borrowingType: z.enum(borrowingTypes, { required_error: "Jenis peminjaman wajib dipilih" }),
   labRoom:      z.string().optional(),
   toolName:     z.string().optional(),

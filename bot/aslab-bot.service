@@ -1,0 +1,17 @@
+[Unit]
+Description=Aslab Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=botuser
+WorkingDirectory=/home/botuser/aslab-project/bot
+EnvironmentFile=/home/botuser/aslab-project/bot/.env
+ExecStart=/home/botuser/aslab-project/bot/venv/bin/python -u main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

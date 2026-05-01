@@ -1,18 +1,12 @@
 import { Button } from "@/components/ui/button";
 import Star9 from "@/components/stars/s9";
 
-const handleCTAClick = () => {
-  // open new tab and go to gform
-  window.open(
-    "https://intip.in/PeminjamanAlatDanPerizinanPenggunaanLabGT",
-    "_blank"
-  );
-};
-
 export default function HeroSection() {
   return (
-    <section className="container px-5 sm:px-0 mx-auto min-h-screen flex flex-col items-center justify-center space-y-20">
-      {/* title */}
+    <section
+      id="home"
+      className="container px-5 sm:px-0 mx-auto min-h-screen flex flex-col items-center justify-center space-y-20"
+    >
       <div className="flex flex-col space-y-5 justify-center items-center">
         <h1 className="font-extrabold text-4xl sm:text-5xl text-center text-pretty leading-snug select-text">
           <span className="relative bg-main/50 border-2 border-main/40 rounded-base px-2">
@@ -34,18 +28,31 @@ export default function HeroSection() {
           Laboratory Assistant.
         </h1>
         <p className="font-base sm:text-lg md:text-xl max-w-3xl sm:max-w-4xl text-center">
-          A dedicated group of students who strive to learning, collaboration,
+          A dedicated group of students who strive for learning, collaboration,
           and creativity — where code meets art, game design comes to life, and
           the magic of innovation is brewed daily.
         </p>
       </div>
-      <Button
-        size={"cta"}
-        className="text-xl font-bold cursor-pointer"
-        onClick={handleCTAClick}
-      >
-        Request Lab Access
-      </Button>
+
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <Button
+          size={"cta"}
+          className="text-xl font-bold cursor-pointer"
+          onClick={() => window.open("https://t.me/aslabGT_bot", "_blank")}
+        >
+          Chat Becky on Telegram 🤖
+        </Button>
+        <Button
+          size={"cta"}
+          variant={"neutral"}
+          className="text-xl font-bold cursor-pointer"
+          onClick={() => {
+            document.getElementById("how-to-borrow")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          How to Borrow ↓
+        </Button>
+      </div>
     </section>
   );
 }

@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 
 import { formSchema, labRooms, tools, type FormSchemaType } from "@/schema/formSchema";
 import { useGasSubmit } from "@/hooks/useGasSubmit";
-import { useTelegramConnect } from "@/hooks/useTelegramConnect";
 
 interface BorrowingFormProps {
   onSuccess: () => void;
@@ -22,7 +21,6 @@ interface BorrowingFormProps {
 
 export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
   const { submitBorrowing, status, bookingId, errorMsg, reset } = useGasSubmit();
-  const { botUrl, connected, telegramId, startPolling } = useTelegramConnect();
 
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
@@ -30,6 +28,7 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
       name: "",
       studentClass: undefined,
       studentYear: undefined,
+      phone: "",
       borrowingType: undefined,
       labRoom: undefined,
       toolName: undefined,
@@ -42,18 +41,14 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
   });
 
   const borrowingType = form.watch("borrowingType");
-  const toolName = form.watch("toolName");
-  const isLoading = status === "loading";
+  const toolName      = form.watch("toolName");
+  const isLoading     = status === "loading";
 
   const onSubmit = async (values: FormSchemaType) => {
-    if (!connected || !telegramId) {
-      alert("Hubungkan Telegram kamu terlebih dahulu!");
-      return;
-    }
-    await submitBorrowing(values, telegramId);
+    await submitBorrowing(values);
   };
 
-  // ── Success screen ──
+  // ── Success ──
   if (status === "success") {
     return (
       <div className="flex flex-col items-center justify-center gap-5 py-6 text-center">
@@ -63,7 +58,7 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
         <div>
           <h3 className="text-xl font-bold">Permohonan Terkirim!</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Aslab akan segera memproses permohonanmu. Pantau notifikasi Telegram kamu.
+            Aslab akan segera memproses permohonanmu. Notifikasi akan dikirim ke Telegram jika nomor ini sudah terdaftar di bot.
           </p>
           {bookingId && (
             <p className="mt-3 rounded-base border-2 border-black bg-main/20 px-4 py-2 font-mono text-sm font-semibold">
@@ -78,7 +73,6 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
     );
   }
 
-  // ── Form ──
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 w-full">
@@ -88,14 +82,11 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
         </p>
 
         <FormField
-          control={form.control}
-          name="name"
+          control={form.control} name="name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nama Lengkap</FormLabel>
-              <FormControl>
-                <Input placeholder="Contoh: Budi Santoso" {...field} />
-              </FormControl>
+              <FormControl><Input placeholder="Contoh: Budi Santoso" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -103,40 +94,29 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <FormField
-            control={form.control}
-            name="studentClass"
+            control={form.control} name="studentClass"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Kelas</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
-                  </FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    {["A", "B", "C", "D"].map((c) => (
-                      <SelectItem key={c} value={c}>GT {c}</SelectItem>
-                    ))}
+                    {["A","B","C","D"].map(c => <SelectItem key={c} value={c}>GT {c}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
-
           <FormField
-            control={form.control}
-            name="studentYear"
+            control={form.control} name="studentYear"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Angkatan</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Pilih angkatan" /></SelectTrigger>
-                  </FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih angkatan" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    {["2022", "2023", "2024", "2025"].map((y) => (
-                      <SelectItem key={y} value={y}>{y}</SelectItem>
-                    ))}
+                    {["2022","2023","2024","2025"].map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -146,53 +126,39 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
         </div>
 
         {/* ── Hubungkan Telegram ── */}
-        <FormItem>
-          <FormLabel>Notifikasi Telegram</FormLabel>
-          {connected ? (
-            <div className="flex items-center gap-2 rounded-base border-2 border-green-500 bg-green-50 px-4 py-2 text-sm text-green-700">
-              <CheckCircle className="size-4 shrink-0" />
-              <span>Telegram berhasil dihubungkan!</span>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="neutral"
-              className="w-full"
-              onClick={() => {
-                window.open(botUrl, "_blank");
-                startPolling();
-              }}
-            >
-              💬 Hubungkan Telegram
-            </Button>
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>No. HP / WhatsApp</FormLabel>
+              <FormControl>
+                <Input placeholder="08123456789 atau +6281234567890" {...field} />
+              </FormControl>
+              <p className="text-xs text-muted-foreground mt-1">
+                Daftarkan nomor ini ke bot Telegram dengan kirim <code>/start</code>, lalu balas dengan nomor HP yang sama.
+              </p>
+              <FormMessage />
+            </FormItem>
           )}
-          <p className="text-xs text-muted-foreground mt-1">
-            Klik tombol → buka Telegram → klik <b>Start</b> untuk menerima notifikasi status peminjaman.
-          </p>
-        </FormItem>
+        />
 
         <p className="pt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
           Detail Peminjaman
         </p>
 
         <FormField
-          control={form.control}
-          name="borrowingType"
+          control={form.control} name="borrowingType"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Jenis Peminjaman</FormLabel>
-              <Select
-                onValueChange={(val) => {
-                  field.onChange(val);
-                  form.setValue("labRoom", undefined);
-                  form.setValue("toolName", undefined);
-                  form.setValue("toolOtherName", "");
-                }}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger><SelectValue placeholder="Lab atau Alat?" /></SelectTrigger>
-                </FormControl>
+              <Select onValueChange={(val) => {
+                field.onChange(val);
+                form.setValue("labRoom", undefined);
+                form.setValue("toolName", undefined);
+                form.setValue("toolOtherName", "");
+              }} defaultValue={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Lab atau Alat?" /></SelectTrigger></FormControl>
                 <SelectContent>
                   <SelectItem value="Lab">🏫 Ruang Lab</SelectItem>
                   <SelectItem value="Alat">🔧 Alat / Perangkat</SelectItem>
@@ -204,20 +170,14 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
         />
 
         {borrowingType === "Lab" && (
-          <FormField
-            control={form.control}
-            name="labRoom"
+          <FormField control={form.control} name="labRoom"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Ruang Lab</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Pilih ruang" /></SelectTrigger>
-                  </FormControl>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih ruang" /></SelectTrigger></FormControl>
                   <SelectContent>
-                    {labRooms.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
+                    {labRooms.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -228,20 +188,14 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
 
         {borrowingType === "Alat" && (
           <>
-            <FormField
-              control={form.control}
-              name="toolName"
+            <FormField control={form.control} name="toolName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nama Alat</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Pilih alat" /></SelectTrigger>
-                    </FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih alat" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {tools.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
+                      {tools.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -249,15 +203,11 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
               )}
             />
             {toolName === "Lainnya" && (
-              <FormField
-                control={form.control}
-                name="toolOtherName"
+              <FormField control={form.control} name="toolOtherName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nama Alat (isi manual)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Contoh: VR Headset" {...field} />
-                    </FormControl>
+                    <FormControl><Input placeholder="Contoh: VR Headset" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -266,9 +216,7 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
           </>
         )}
 
-        <FormField
-          control={form.control}
-          name="borrowDate"
+        <FormField control={form.control} name="borrowDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tanggal Peminjaman</FormLabel>
@@ -281,9 +229,7 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
         />
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField
-            control={form.control}
-            name="borrowTime"
+          <FormField control={form.control} name="borrowTime"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Jam Mulai</FormLabel>
@@ -292,9 +238,7 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="returnTime"
+          <FormField control={form.control} name="returnTime"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Jam Selesai</FormLabel>
@@ -305,14 +249,12 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="purpose"
+        <FormField control={form.control} name="purpose"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Keperluan / Deskripsi</FormLabel>
               <FormControl>
-                <Textarea placeholder="Jelaskan keperluan peminjaman secara singkat..." className="resize-none" rows={3} {...field} />
+                <Textarea placeholder="Jelaskan keperluan peminjaman..." className="resize-none" rows={3} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -326,12 +268,11 @@ export default function BorrowingForm({ onSuccess }: BorrowingFormProps) {
           </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={isLoading || !connected}>
-          {isLoading ? (
-            <><Loader2 className="size-4 animate-spin" />Mengirim...</>
-          ) : (
-            "Kirim Permohonan"
-          )}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading
+            ? <><Loader2 className="size-4 animate-spin" />Mengirim...</>
+            : "Kirim Permohonan"
+          }
         </Button>
       </form>
     </Form>

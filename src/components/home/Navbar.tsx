@@ -1,38 +1,40 @@
-import BorrowingForm from "./BorrowingForm"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
-import { Button } from "../ui/button"
-import { useState } from "react"
-
 export default function Navbar() {
-    const [open, setOpen] = useState<boolean>(false)
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
 
-    return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white w-full border-b-4 border-black py-5">
-            <div className="container mx-auto flex justify-between items-center px-5 lg:px-0">
-                {/* logo */}
-                <h1 className="font-bold text-2xl">
-                    GameTech Lab
-                </h1>
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white w-full border-b-4 border-black py-5">
+      <div className="container mx-auto flex justify-between items-center px-5 lg:px-0">
+        <h1 className="font-bold text-2xl">GameTech Lab</h1>
 
-                <ul className="space-x-12 flex items-center font-base text-base">
-                    <li>
-                        <Dialog open={open} onOpenChange={setOpen}>
-                            <DialogTrigger asChild>
-                                <Button>Pinjam Lab / Alat</Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-                                <DialogHeader>
-                                    <DialogTitle>Form Peminjaman</DialogTitle>
-                                    <DialogDescription>
-                                        Isi data di bawah — aslab akan segera memproses permohonanmu.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <BorrowingForm onSuccess={() => setOpen(false)} />
-                            </DialogContent>
-                        </Dialog>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    )
+        <ul className="space-x-8 flex items-center font-base text-base">
+          <li>
+            <button
+              onClick={() => scrollTo("home")}
+              className="hover:underline underline-offset-4 cursor-pointer"
+            >
+              Home
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => scrollTo("how-to-borrow")}
+              className="hover:underline underline-offset-4 cursor-pointer"
+            >
+              How to Borrow
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => scrollTo("contact")}
+              className="hover:underline underline-offset-4 cursor-pointer"
+            >
+              Contact
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  );
 }

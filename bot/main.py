@@ -68,9 +68,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📋 /status — Cek status peminjaman\n"
         "📸 /ambil — Kirim foto kondisi awal saat ambil barang\n"
         "🔄 /pengembalian — Laporan pengembalian\n"
+        "👥 /aslab_contact — Daftar kontak aslab\n"
         "🤖 /start — Tampilkan pesan ini\n\n"
         "<i>Ketik /batal untuk membatalkan form yang sedang berjalan.</i>",
         parse_mode="HTML",
+    )
+
+
+# ── /aslab_contact ───────────────────────────────────────────
+
+async def aslab_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👥 <b>Daftar Kontak Aslab</b>\n\n"
+        "📊 <a href=\"https://docs.google.com/spreadsheets/d/1MSK29oKAG_YGcd-2iBqDK-eS1jkHPJU948a9xCIsWrE/edit?usp=sharing\">Lihat Kontak Aslab</a>",
+        parse_mode="HTML",
+        disable_web_page_preview=True,
     )
 
 
@@ -829,6 +841,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve|decline)"))
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("aslab_contact", aslab_contact))
     app.add_handler(pinjam_conv)
     app.add_handler(pengembalian_conv)
     app.add_handler(ambil_conv)

@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+from collections import OrderedDict
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +30,21 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
+_RECENT_CB: "OrderedDict[str, float]" = OrderedDict()
+
+
+def _seen(key: str, ttl: float = 60.0) -> bool:
+    now = time.time()
+    while _RECENT_CB and now - next(iter(_RECENT_CB.values())) > ttl:
+        _RECENT_CB.popitem(last=False)
+    if key in _RECENT_CB:
+        return True
+    _RECENT_CB[key] = now
+    if len(_RECENT_CB) > 512:
+        _RECENT_CB.popitem(last=False)
+    return False
+
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 GROUP_ASLAB_ID = int(os.environ["GROUP_ASLAB_ID"])
@@ -544,19 +560,21 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     aslab = update.effective_user
     aslab_name = aslab.first_name + (" " + aslab.last_name if aslab.last_name else "")
 
+    if _seen(query.id) or _seen(data):
+        logger.info("dup callback suppressed: id=%s data=%s", query.id, data)
+        return
+
     if data.startswith("approve_return_"):
         rid = data[15:]
-        row = sheets.find_pengembalian_by_id(rid)
-        if not row:
-            await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
-            return
-        if sheets._v(row, 8) != "waiting_return":
-            await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
+        row = sheets.claim_pengembalian(rid, "returned", aslab_name)
+        if row is None:
+            if sheets.find_pengembalian_by_id(rid) is None:
+                await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
+            else:
+                await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
             return
 
-        sheets.update_pengembalian_status(rid, "returned")
         pid = sheets._v(row, 1)
-        sheets.update_peminjaman_return_status(pid, "returned")
         nama_item = sheets._v(row, 5)
         user_chat_id = sheets.get_peminjaman_user_id(pid)
 
@@ -580,17 +598,15 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("decline_return_"):
         rid = data[15:]
-        row = sheets.find_pengembalian_by_id(rid)
-        if not row:
-            await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
-            return
-        if sheets._v(row, 8) != "waiting_return":
-            await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
+        row = sheets.claim_pengembalian(rid, "return_declined", aslab_name)
+        if row is None:
+            if sheets.find_pengembalian_by_id(rid) is None:
+                await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
+            else:
+                await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
             return
 
-        sheets.update_pengembalian_status(rid, "return_declined")
         pid = sheets._v(row, 1)
-        sheets.update_peminjaman_return_status(pid, "return_declined")
         nama_item = sheets._v(row, 5)
         user_chat_id = sheets.get_peminjaman_user_id(pid)
 
@@ -614,15 +630,18 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("approve_"):
         pid = data[8:]
-        row = sheets.find_peminjaman_by_id(pid)
-        if not row:
-            await query.edit_message_text(f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan.")
-            return
-        if sheets._v(row, 14) != "waiting":
-            await query.edit_message_text("⚠️ Peminjaman sudah diproses.")
+        row = sheets.claim_peminjaman(pid, "approved", aslab_name)
+        if row is None:
+            if sheets.find_peminjaman_by_id(pid) is None:
+                msg = f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan."
+            else:
+                msg = "⚠️ Peminjaman sudah diproses."
+            if query.message.photo:
+                await query.edit_message_caption(msg)
+            else:
+                await query.edit_message_text(msg)
             return
 
-        sheets.update_peminjaman_status(pid, "approved", aslab_name)
         jenis = sheets._v(row, 4)
         jenis_label = "Lab" if jenis == "lab" else "Barang"
         result_text = (
@@ -664,15 +683,18 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("decline_"):
         pid = data[8:]
-        row = sheets.find_peminjaman_by_id(pid)
-        if not row:
-            await query.edit_message_text(f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan.")
-            return
-        if sheets._v(row, 14) != "waiting":
-            await query.edit_message_text("⚠️ Peminjaman sudah diproses.")
+        row = sheets.claim_peminjaman(pid, "declined", aslab_name)
+        if row is None:
+            if sheets.find_peminjaman_by_id(pid) is None:
+                msg = f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan."
+            else:
+                msg = "⚠️ Peminjaman sudah diproses."
+            if query.message.photo:
+                await query.edit_message_caption(msg)
+            else:
+                await query.edit_message_text(msg)
             return
 
-        sheets.update_peminjaman_status(pid, "declined", aslab_name)
         jenis_label = "Lab" if sheets._v(row, 4) == "lab" else "Barang"
         result_text = (
             f"❌ <b>Peminjaman DITOLAK</b>\n"
@@ -691,7 +713,6 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"😔 <b>Peminjaman Anda DITOLAK</b>\n\n"
             f"🆔 ID: <code>{esc(pid)}</code>\n"
             f"🏷️ {jenis_label}: <b>{esc(sheets._v(row, 5))}</b>\n\n"
-            f"👨‍💼 Ditolak oleh: <b>{esc(aslab_name)}</b>\n\n"
             "Silakan ajukan peminjaman baru dengan /pinjam.",
             parse_mode="HTML",
         )

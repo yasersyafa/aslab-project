@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 import random
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 import gspread
 from dotenv import load_dotenv
@@ -46,8 +49,17 @@ PENGEMBALIAN_HEADERS = [
 
 
 def _ensure_headers(ws, headers):
-    if not ws.row_values(1):
+    existing = ws.row_values(1)
+    if not existing:
         ws.update([headers], "A1")
+    elif existing != headers:
+        first = existing[0] if existing else ""
+        if first.startswith(("PJM-", "RET-")):
+            logger.critical(
+                "_ensure_headers: row 1 looks like real data (first_cell=%r) — refusing to overwrite", first
+            )
+            raise RuntimeError(f"Sheet row 1 contains data, not headers: {first!r}")
+        logger.warning("_ensure_headers: row 1 differs from expected headers (first_cell=%r)", first)
 
 
 def _gen_id(prefix="PJM") -> str:
@@ -62,6 +74,10 @@ def _timestamp() -> str:
 
 def _v(row: list, i: int, default="") -> str:
     return row[i] if i < len(row) else default
+
+
+def _norm_status(s) -> str:
+    return (s or "").strip().casefold()
 
 
 _COLORS = {
@@ -111,7 +127,9 @@ def add_peminjaman(data: dict, user_id: str, user_name: str) -> str:
 
 def save_foto_ambil(pid: str, file_id: str):
     ws = _sheet("Peminjaman")
-    for i, r in enumerate(ws.get_all_values()[1:], start=2):
+    for i, r in enumerate(ws.get_all_values(), start=1):
+        if _v(r, 0) == PEMINJAMAN_HEADERS[0]:
+            continue
         if _v(r, 0) == pid:
             ws.update_cell(i, 20, file_id)
             return
@@ -119,12 +137,14 @@ def save_foto_ambil(pid: str, file_id: str):
 
 def get_peminjaman_by_user(user_id: str) -> list:
     rows = _sheet("Peminjaman").get_all_values()
-    return [r for r in rows[1:] if _v(r, 2) == user_id]
+    return [r for r in rows if _v(r, 0) != PEMINJAMAN_HEADERS[0] and _v(r, 2) == user_id]
 
 
 def find_peminjaman_by_id(pid: str) -> list | None:
     rows = _sheet("Peminjaman").get_all_values()
-    for r in rows[1:]:
+    for r in rows:
+        if _v(r, 0) == PEMINJAMAN_HEADERS[0]:
+            continue
         if _v(r, 0) == pid:
             return r
     return None
@@ -137,7 +157,9 @@ def get_peminjaman_user_id(pid: str) -> str | None:
 
 def update_peminjaman_status(pid: str, status: str, aslab_name: str):
     ws = _sheet("Peminjaman")
-    for i, r in enumerate(ws.get_all_values()[1:], start=2):
+    for i, r in enumerate(ws.get_all_values(), start=1):
+        if _v(r, 0) == PEMINJAMAN_HEADERS[0]:
+            continue
         if _v(r, 0) == pid:
             ws.update_cell(i, 15, status)
             ws.update_cell(i, 17, aslab_name)
@@ -147,7 +169,9 @@ def update_peminjaman_status(pid: str, status: str, aslab_name: str):
 
 def update_peminjaman_return_status(pid: str, status: str):
     ws = _sheet("Peminjaman")
-    for i, r in enumerate(ws.get_all_values()[1:], start=2):
+    for i, r in enumerate(ws.get_all_values(), start=1):
+        if _v(r, 0) == PEMINJAMAN_HEADERS[0]:
+            continue
         if _v(r, 0) == pid:
             ws.update_cell(i, 16, status)
             _color_row(ws, i, "T", status)
@@ -174,7 +198,9 @@ def add_pengembalian(
 
 def find_pengembalian_by_id(rid: str) -> list | None:
     rows = _sheet("Pengembalian").get_all_values()
-    for r in rows[1:]:
+    for r in rows:
+        if _v(r, 0) == PENGEMBALIAN_HEADERS[0]:
+            continue
         if _v(r, 0) == rid:
             return r
     return None
@@ -182,8 +208,67 @@ def find_pengembalian_by_id(rid: str) -> list | None:
 
 def update_pengembalian_status(rid: str, status: str):
     ws = _sheet("Pengembalian")
-    for i, r in enumerate(ws.get_all_values()[1:], start=2):
+    for i, r in enumerate(ws.get_all_values(), start=1):
+        if _v(r, 0) == PENGEMBALIAN_HEADERS[0]:
+            continue
         if _v(r, 0) == rid:
             ws.update_cell(i, 9, status)
             _color_row(ws, i, "I", status)
             return
+
+
+# ── Atomic claim helpers (idempotent approve/decline) ─────────
+
+def claim_peminjaman(pid: str, new_status: str, aslab_name: str, *, expect: str = "waiting") -> list | None:
+    ws = _sheet("Peminjaman")
+    rows = ws.get_all_values()
+    for i, r in enumerate(rows, start=1):
+        if _v(r, 0) == PEMINJAMAN_HEADERS[0]:
+            continue
+        if _v(r, 0) != pid:
+            continue
+        actual = _norm_status(_v(r, 14))
+        if actual != expect:
+            logger.warning(
+                "claim_peminjaman: pid=%s row=%d len=%d status=%r expected=%r",
+                pid, i, len(r), _v(r, 14), expect,
+            )
+            return None
+        ws.update_cell(i, 15, new_status)
+        ws.update_cell(i, 17, aslab_name)
+        _color_row(ws, i, "T", new_status)
+        if len(r) < 17:
+            r += [""] * (17 - len(r))
+        r[14] = new_status
+        r[16] = aslab_name
+        return r
+    logger.warning("claim_peminjaman: pid=%s not found", pid)
+    return None
+
+
+def claim_pengembalian(rid: str, new_status: str, aslab_name: str, *, expect: str = "waiting_return") -> list | None:
+    ws = _sheet("Pengembalian")
+    rows = ws.get_all_values()
+    for i, r in enumerate(rows, start=1):
+        if _v(r, 0) == PENGEMBALIAN_HEADERS[0]:
+            continue
+        if _v(r, 0) != rid:
+            continue
+        actual = _norm_status(_v(r, 8))
+        if actual != expect:
+            logger.warning(
+                "claim_pengembalian: rid=%s row=%d len=%d status=%r expected=%r",
+                rid, i, len(r), _v(r, 8), expect,
+            )
+            return None
+        ws.update_cell(i, 9, new_status)
+        _color_row(ws, i, "I", new_status)
+        pid = _v(r, 1)
+        if pid:
+            update_peminjaman_return_status(pid, new_status)
+        if len(r) < 9:
+            r += [""] * (9 - len(r))
+        r[8] = new_status
+        return r
+    logger.warning("claim_pengembalian: rid=%s not found", rid)
+    return None

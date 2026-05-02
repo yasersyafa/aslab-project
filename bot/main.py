@@ -2,6 +2,8 @@ import html
 import logging
 import os
 import sys
+import time
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -16,6 +18,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram.request import HTTPXRequest
 
 import sheets
 
@@ -29,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 GROUP_ASLAB_ID = int(os.environ["GROUP_ASLAB_ID"])
+HEARTBEAT_PATH = Path(os.environ.get("BOT_HEARTBEAT_PATH", "/tmp/bot_heartbeat"))
 
 DAFTAR_LAB = [
     "SAW 08.07 Lab Game Design", "SAW 08.01 Lab Game Art", "SAW 08.06 Lab Game Programming"
@@ -784,11 +788,40 @@ async def ambil_foto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ── App setup ─────────────────────────────────────────────────
 
-def main():
-    import asyncio
-    asyncio.set_event_loop(asyncio.new_event_loop())
+async def _heartbeat_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        HEARTBEAT_PATH.write_text(str(int(time.time())))
+    except OSError as exc:
+        logger.warning("heartbeat write failed: %s", exc)
 
-    app = Application.builder().token(BOT_TOKEN).build()
+
+async def _on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.exception("Unhandled exception; update=%r", update, exc_info=context.error)
+
+
+def main():
+    request = HTTPXRequest(
+        connection_pool_size=8,
+        connect_timeout=10.0,
+        read_timeout=20.0,
+        write_timeout=20.0,
+        pool_timeout=5.0,
+    )
+    get_updates_request = HTTPXRequest(
+        connection_pool_size=1,
+        connect_timeout=10.0,
+        read_timeout=20.0,
+        write_timeout=20.0,
+        pool_timeout=5.0,
+    )
+
+    app = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .request(request)
+        .get_updates_request(get_updates_request)
+        .build()
+    )
 
     pinjam_conv = ConversationHandler(
         entry_points=[CommandHandler("pinjam", pinjam_start)],
@@ -846,8 +879,14 @@ def main():
     app.add_handler(pengembalian_conv)
     app.add_handler(ambil_conv)
 
+    app.add_error_handler(_on_error)
+    app.job_queue.run_repeating(_heartbeat_job, interval=30, first=1, name="heartbeat")
+
     logger.info("Bot started (polling)...")
-    app.run_polling(allowed_updates=["message", "callback_query"])
+    app.run_polling(
+        allowed_updates=["message", "callback_query"],
+        drop_pending_updates=True,
+    )
 
 
 if __name__ == "__main__":

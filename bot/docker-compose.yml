@@ -4,8 +4,20 @@ services:
     container_name: aslab-bot
     env_file: .env
     restart: unless-stopped
+    labels:
+      - autoheal=true
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
+
+  autoheal:
+    image: willfarrell/autoheal:1.2.0
+    container_name: aslab-autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

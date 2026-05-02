@@ -824,6 +824,14 @@ async def _heartbeat_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    from telegram.error import Conflict
+    if isinstance(context.error, Conflict):
+        logger.warning("Webhook conflict detected, deleting webhook...")
+        try:
+            await context.bot.delete_webhook(drop_pending_updates=True)
+        except Exception as exc:
+            logger.error("Failed to delete webhook: %s", exc)
+        return
     logger.exception("Unhandled exception; update=%r", update, exc_info=context.error)
 
 
@@ -838,7 +846,7 @@ def main():
     get_updates_request = HTTPXRequest(
         connection_pool_size=1,
         connect_timeout=10.0,
-        read_timeout=20.0,
+        read_timeout=45.0,
         write_timeout=20.0,
         pool_timeout=5.0,
     )

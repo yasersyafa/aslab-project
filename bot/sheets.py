@@ -24,6 +24,14 @@ def _client():
         creds_info = json.loads(os.environ["GOOGLE_CREDENTIALS"])
         creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
         _gc = gspread.authorize(creds)
+        # cap every HTTP request at 30s so a hung Google API can't block the event loop indefinitely
+        try:
+            _gc.http_client.session.timeout = 30   # gspread 6.x
+        except AttributeError:
+            try:
+                _gc.session.timeout = 30           # gspread 5.x
+            except AttributeError:
+                logger.warning("gspread: could not set request timeout; hung requests possible")
     return _gc
 
 

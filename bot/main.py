@@ -1,3 +1,4 @@
+import asyncio
 import html
 import logging
 import os
@@ -32,6 +33,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _RECENT_CB: "OrderedDict[str, float]" = OrderedDict()
+
+
+async def _st(fn, *args, **kwargs):
+    """Run a synchronous gspread function in a thread so it doesn't block the event loop."""
+    return await asyncio.to_thread(fn, *args, **kwargs)
 
 
 def _seen(key: str, ttl: float = 60.0) -> bool:
@@ -110,7 +116,7 @@ async def aslab_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
-    rows = sheets.get_peminjaman_by_user(user_id)
+    rows = await _st(sheets.get_peminjaman_by_user, user_id)
     if not rows:
         await update.message.reply_text("📋 Belum ada riwayat peminjaman.")
         return
@@ -371,7 +377,7 @@ async def konfirmasi_ya(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ))
 
     try:
-        pid = sheets.add_peminjaman(d, str(user.id), user_name)
+        pid = await _st(sheets.add_peminjaman, d, str(user.id), user_name)
     except Exception as e:
         logger.error(f"add_peminjaman failed: {e}")
         await query.edit_message_text("❌ Gagal menyimpan data. Coba lagi nanti.")
@@ -458,7 +464,7 @@ async def pengembalian_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pid = update.message.text.strip()
     user_id = str(update.effective_user.id)
 
-    row = sheets.find_peminjaman_by_id(pid)
+    row = await _st(sheets.find_peminjaman_by_id, pid)
     if not row:
         await update.message.reply_text("❌ ID tidak ditemukan. Cek kembali dengan /status")
         return PENGEMBALIAN_ID
@@ -505,7 +511,8 @@ async def pengembalian_foto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     row = d["rowData"]
 
     try:
-        ret_id = sheets.add_pengembalian(
+        ret_id = await _st(
+            sheets.add_pengembalian,
             peminjaman_id=d["peminjamanId"],
             user_id=str(user.id),
             user_name=user_name,
@@ -513,7 +520,7 @@ async def pengembalian_foto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keterangan=d["keteranganKembali"],
             file_id=file_id,
         )
-        sheets.update_peminjaman_return_status(d["peminjamanId"], "waiting_return")
+        await _st(sheets.update_peminjaman_return_status, d["peminjamanId"], "waiting_return")
     except Exception as e:
         logger.error(f"add_pengembalian failed: {e}")
         await update.message.reply_text("❌ Gagal menyimpan data. Coba lagi nanti.")
@@ -566,9 +573,9 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data.startswith("approve_return_"):
         rid = data[15:]
-        row = sheets.claim_pengembalian(rid, "returned", aslab_name)
+        row = await _st(sheets.claim_pengembalian, rid, "returned", aslab_name)
         if row is None:
-            if sheets.find_pengembalian_by_id(rid) is None:
+            if await _st(sheets.find_pengembalian_by_id, rid) is None:
                 await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
             else:
                 await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
@@ -576,7 +583,7 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pid = sheets._v(row, 1)
         nama_item = sheets._v(row, 5)
-        user_chat_id = sheets.get_peminjaman_user_id(pid)
+        user_chat_id = await _st(sheets.get_peminjaman_user_id, pid)
 
         await query.edit_message_caption(
             f"✅ <b>Pengembalian DIKONFIRMASI</b>\n"
@@ -598,9 +605,9 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("decline_return_"):
         rid = data[15:]
-        row = sheets.claim_pengembalian(rid, "return_declined", aslab_name)
+        row = await _st(sheets.claim_pengembalian, rid, "return_declined", aslab_name)
         if row is None:
-            if sheets.find_pengembalian_by_id(rid) is None:
+            if await _st(sheets.find_pengembalian_by_id, rid) is None:
                 await query.edit_message_caption(f"⚠️ ID Pengembalian {esc(rid)} tidak ditemukan.")
             else:
                 await query.edit_message_caption("⚠️ Pengembalian sudah diproses.")
@@ -608,7 +615,7 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pid = sheets._v(row, 1)
         nama_item = sheets._v(row, 5)
-        user_chat_id = sheets.get_peminjaman_user_id(pid)
+        user_chat_id = await _st(sheets.get_peminjaman_user_id, pid)
 
         await query.edit_message_caption(
             f"❌ <b>Pengembalian DITOLAK</b>\n"
@@ -630,9 +637,9 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("approve_"):
         pid = data[8:]
-        row = sheets.claim_peminjaman(pid, "approved", aslab_name)
+        row = await _st(sheets.claim_peminjaman, pid, "approved", aslab_name)
         if row is None:
-            if sheets.find_peminjaman_by_id(pid) is None:
+            if await _st(sheets.find_peminjaman_by_id, pid) is None:
                 msg = f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan."
             else:
                 msg = "⚠️ Peminjaman sudah diproses."
@@ -683,9 +690,9 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("decline_"):
         pid = data[8:]
-        row = sheets.claim_peminjaman(pid, "declined", aslab_name)
+        row = await _st(sheets.claim_peminjaman, pid, "declined", aslab_name)
         if row is None:
-            if sheets.find_peminjaman_by_id(pid) is None:
+            if await _st(sheets.find_peminjaman_by_id, pid) is None:
                 msg = f"⚠️ ID Peminjaman {esc(pid)} tidak ditemukan."
             else:
                 msg = "⚠️ Peminjaman sudah diproses."
@@ -735,7 +742,7 @@ async def ambil_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pid = update.message.text.strip()
     user_id = str(update.effective_user.id)
 
-    row = sheets.find_peminjaman_by_id(pid)
+    row = await _st(sheets.find_peminjaman_by_id, pid)
     if not row:
         await update.message.reply_text("❌ ID tidak ditemukan. Cek kembali dengan /status")
         return AMBIL_ID
@@ -778,7 +785,7 @@ async def ambil_foto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     row = d["rowData"]
 
     try:
-        sheets.save_foto_ambil(pid, file_id)
+        await _st(sheets.save_foto_ambil, pid, file_id)
     except Exception as e:
         logger.error(f"save_foto_ambil failed: {e}")
         await update.message.reply_text("❌ Gagal menyimpan foto. Coba lagi.")

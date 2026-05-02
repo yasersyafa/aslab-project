@@ -843,11 +843,15 @@ def main():
         pool_timeout=5.0,
     )
 
+    async def _post_init(application: Application) -> None:
+        await application.bot.delete_webhook(drop_pending_updates=True)
+
     app = (
         Application.builder()
         .token(BOT_TOKEN)
         .request(request)
         .get_updates_request(get_updates_request)
+        .post_init(_post_init)
         .build()
     )
 

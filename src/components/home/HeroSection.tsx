@@ -5,10 +5,10 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="container px-5 sm:px-0 mx-auto min-h-screen flex flex-col items-center justify-center space-y-20"
+      className="container px-4 sm:px-6 mx-auto min-h-[calc(100svh-80px)] pt-24 sm:pt-28 pb-12 flex flex-col items-center justify-center gap-10 sm:gap-20"
     >
       <div className="flex flex-col space-y-5 justify-center items-center">
-        <h1 className="font-extrabold text-4xl sm:text-5xl text-center text-pretty leading-snug select-text">
+        <h1 className="font-extrabold text-3xl sm:text-5xl text-center text-pretty leading-snug select-text">
           <span className="relative bg-main/50 border-2 border-main/40 rounded-base px-2">
             <Star9
               pathClassName="bg-main"
@@ -27,7 +27,7 @@ export default function HeroSection() {
           <br />
           Laboratory Assistant.
         </h1>
-        <p className="font-base sm:text-lg md:text-xl max-w-3xl sm:max-w-4xl text-center">
+        <p className="font-base text-sm sm:text-lg md:text-xl max-w-3xl sm:max-w-4xl text-center">
           A dedicated group of students who strive for learning, collaboration,
           and creativity — where code meets art, game design comes to life, and
           the magic of innovation is brewed daily.
@@ -37,7 +37,7 @@ export default function HeroSection() {
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         <Button
           size={"cta"}
-          className="text-xl font-bold cursor-pointer"
+          className="text-base sm:text-xl font-bold cursor-pointer whitespace-nowrap"
           onClick={() => window.open("https://t.me/aslabGT_bot", "_blank")}
         >
           Chat Becky on Telegram 🤖
@@ -45,7 +45,7 @@ export default function HeroSection() {
         <Button
           size={"cta"}
           variant={"neutral"}
-          className="text-xl font-bold cursor-pointer"
+          className="text-base sm:text-xl font-bold cursor-pointer whitespace-nowrap"
           onClick={() => {
             document.getElementById("how-to-borrow")?.scrollIntoView({ behavior: "smooth" });
           }}

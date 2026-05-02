@@ -8,7 +8,7 @@ import pattern from '@/assets/pattern.png'
 
 function App() {
   return (
-    <div style={{ backgroundImage: `url(${pattern})`, backgroundRepeat: 'repeat' }}>
+    <div className="overflow-x-hidden" style={{ backgroundImage: `url(${pattern})`, backgroundRepeat: 'repeat' }}>
       <Navbar />
       <HeroSection />
       <HowToLendSection />

@@ -71,11 +71,11 @@ export default function HowToLendSection() {
   const panelWrapRef = useRef<HTMLDivElement>(null);
 
   return (
-    <section id="how-to-borrow" className="py-24 px-5">
+    <section id="how-to-borrow" className="py-12 sm:py-24 px-4 sm:px-5">
       <div className="container mx-auto">
         {/* heading */}
         <div className="mb-10 text-center">
-          <h2 className="font-extrabold text-4xl sm:text-5xl mb-4">
+          <h2 className="font-extrabold text-3xl sm:text-5xl mb-4">
             How to Borrow
           </h2>
           <p className="text-lg max-w-xl mx-auto font-base opacity-70">
@@ -123,7 +123,7 @@ export default function HowToLendSection() {
             role="tabpanel"
             id={`panel-${active.key}`}
             aria-labelledby={`tab-${active.key}`}
-            className="bg-secondary-background border-2 border-black rounded-base shadow-shadow p-8 animate-in fade-in duration-200"
+            className="bg-secondary-background border-2 border-black rounded-base shadow-shadow p-5 sm:p-8 animate-in fade-in duration-200"
           >
             <div className="flex items-center gap-3 mb-8">
               <span className="text-3xl">{active.emoji}</span>

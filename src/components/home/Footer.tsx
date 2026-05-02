@@ -1,10 +1,10 @@
 export default function Footer() {
   return (
-    <footer className="border-t-4 border-black bg-secondary-background py-10 px-5">
+    <footer className="border-t-4 border-black bg-secondary-background py-8 sm:py-10 px-4 sm:px-5">
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
         <p className="font-bold text-xl">GameTech Lab</p>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           {/* Instagram */}
           <a
             href="#"

@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 
 export default function ContactSection() {
   return (
-    <section id="contact" className="py-24 px-5">
+    <section id="contact" className="py-12 sm:py-24 px-4 sm:px-5">
       <div className="container mx-auto">
         <div className="mb-14 text-center">
-          <h2 className="font-extrabold text-4xl sm:text-5xl mb-4">
+          <h2 className="font-extrabold text-3xl sm:text-5xl mb-4">
             Contact Becky
           </h2>
           <p className="text-lg max-w-xl mx-auto font-base opacity-70">
@@ -13,7 +13,7 @@ export default function ContactSection() {
           </p>
         </div>
 
-        <div className="max-w-xl mx-auto bg-secondary-background border-2 border-black rounded-base shadow-shadow p-8 flex flex-col gap-6">
+        <div className="max-w-xl mx-auto bg-secondary-background border-2 border-black rounded-base shadow-shadow p-5 sm:p-8 flex flex-col gap-6">
           {/* Telegram bot */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-black pb-6">
             <div className="flex items-center gap-3">

@@ -82,6 +82,18 @@ def _format_items(items: list) -> str:
     return ", ".join(f"{esc(it['nama'])} ({esc(it['jumlah'])})" for it in items)
 
 
+def _lab_keyboard(selected: list) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(
+            f"{'✅' if lab in selected else '⬜'} {lab}",
+            callback_data=f"lab_toggle_{i}",
+        )]
+        for i, lab in enumerate(DAFTAR_LAB)
+    ]
+    rows.append([InlineKeyboardButton("✅ Selesai", callback_data="lab_done")])
+    return InlineKeyboardMarkup(rows)
+
+
 # ── /start ───────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -178,11 +190,13 @@ async def pilih_jenis(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["jenis"] = jenis
 
     if jenis == "lab":
-        buttons = [[InlineKeyboardButton(item, callback_data=f"item_{item}")] for item in DAFTAR_LAB]
+        context.user_data["selected_labs"] = []
         await query.edit_message_text(
-            "📝 <b>Form Peminjaman</b>\n\nPilih 🏫 Lab yang ingin dipinjam:",
+            "📝 <b>Form Peminjaman</b>\n\n"
+            "Pilih 🏫 Lab yang ingin dipinjam (boleh lebih dari satu).\n"
+            "Tekan tombol untuk memilih, lalu tekan ✅ Selesai.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup(buttons),
+            reply_markup=_lab_keyboard([]),
         )
         return PILIH_ITEM
     else:
@@ -201,17 +215,30 @@ async def pilih_jenis(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def pilih_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    nama_item = query.data[5:]  # strip "item_"
-    context.user_data["namaItem"] = nama_item
+    selected: list = context.user_data.setdefault("selected_labs", [])
 
-    await query.edit_message_text(
-        f"✅ Anda memilih: <b>{esc(nama_item)}</b>\n\n"
-        "Sekarang isi data diri Anda.\n\n"
-        "👤 Masukkan <b>Nama Lengkap</b>:",
-        parse_mode="HTML",
-    )
-    return INPUT_NAMA
+    if query.data == "lab_done":
+        if not selected:
+            await query.answer("Pilih minimal 1 lab terlebih dahulu.", show_alert=True)
+            return PILIH_ITEM
+        await query.answer()
+        context.user_data["namaItem"] = ", ".join(selected)
+        await query.edit_message_text(
+            f"✅ Lab dipilih: <b>{esc(context.user_data['namaItem'])}</b>\n\n"
+            "👤 Masukkan <b>Nama Lengkap</b>:",
+            parse_mode="HTML",
+        )
+        return INPUT_NAMA
+
+    await query.answer()
+    idx = int(query.data.removeprefix("lab_toggle_"))
+    lab = DAFTAR_LAB[idx]
+    if lab in selected:
+        selected.remove(lab)
+    else:
+        selected.append(lab)
+    await query.edit_message_reply_markup(reply_markup=_lab_keyboard(selected))
+    return PILIH_ITEM
 
 
 async def pilih_jenis_item(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -867,7 +894,7 @@ def main():
         entry_points=[CommandHandler("pinjam", pinjam_start)],
         states={
             PILIH_JENIS:       [CallbackQueryHandler(pilih_jenis, pattern="^jenis_")],
-            PILIH_ITEM:        [CallbackQueryHandler(pilih_item, pattern="^item_")],
+            PILIH_ITEM:        [CallbackQueryHandler(pilih_item, pattern="^(lab_toggle_|lab_done$)")],
             PILIH_JENIS_ITEM:  [CallbackQueryHandler(pilih_jenis_item, pattern="^item_count_")],
             INPUT_NAMA_BARANG: [MessageHandler(filters.TEXT & ~filters.COMMAND, input_nama_barang)],
             INPUT_JUMLAH:      [MessageHandler(filters.TEXT & ~filters.COMMAND, input_jumlah)],

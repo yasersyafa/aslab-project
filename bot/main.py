@@ -683,6 +683,7 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🆔 ID: <code>{esc(pid)}</code>\n"
             f"🏷️ {jenis_label}: {esc(sheets._v(row, 5))}\n"
             f"👤 {esc(sheets._v(row, 6))}\n"
+            f"📅 {esc(sheets._v(row, 10))}, {esc(sheets._v(row, 11))} - {esc(sheets._v(row, 12))}\n"
             f"👨‍💼 Diproses oleh: <b>{esc(aslab_name)}</b>"
         )
         if query.message.photo:

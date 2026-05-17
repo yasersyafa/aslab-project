@@ -1,0 +1,45 @@
+name: deploy aslab-bot
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - bot/**
+      - deploy/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: build image
+        run: docker build -t aslab-bot:${{ github.sha }} ./bot
+
+      - name: convert to oci layout
+        run: |
+          mkdir -p oci-layout
+          skopeo copy \
+            docker-daemon:aslab-bot:${{ github.sha }} \
+            oci:./oci-layout:${{ github.sha }}
+
+      - name: upload oci artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aslab-bot-${{ github.sha }}
+          path: oci-layout/
+          retention-days: 1
+
+      - name: trigger hageinfra deploy
+        run: |
+          gh api repos/hagelabs/hageinfra/dispatches \
+            -f event_type=deploy-aslab-bot \
+            -F client_payload[sha]=${{ github.sha }} \
+            -F client_payload[run_id]=${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ secrets.HAGE_TOKEN }}
